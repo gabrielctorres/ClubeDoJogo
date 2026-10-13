@@ -1,0 +1,3 @@
+import type { GameEntry } from '../types';
+export function secureRandomInt(max: number) { if (max <= 0) return 0; const values = new Uint32Array(1); crypto.getRandomValues(values); return values[0] % max; }
+export function calculateWeightedWinner(games: GameEntry[]): string { const total = games.reduce((s,g) => s + Math.max(0,g.finalScore), 0); if (!games.length) throw new Error('Nenhum jogo disponível'); if (!total) return games[secureRandomInt(games.length)].id; const values = new Uint32Array(1); crypto.getRandomValues(values); let cursor = (values[0] / 4294967296) * total; for (const game of games) { cursor -= Math.max(0, game.finalScore); if (cursor < 0) return game.id; } return games.at(-1)!.id; }
