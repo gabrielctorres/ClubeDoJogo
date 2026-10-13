@@ -1,6 +1,6 @@
 import { expect, it } from 'vitest';
 import { renderToStaticMarkup } from 'react-dom/server';
-import { PieWheel } from './Roulette';
+import { getSlices, getWinnerRotation, PieWheel, sliceAtPointer } from './Roulette';
 import type { GameEntry } from '../types';
 
 const games = (scores: number[]) => scores.map((finalScore, index) => ({
@@ -25,4 +25,23 @@ it('distribui as fatias igualmente quando todos estão sem pontos', () => {
   const markup = renderToStaticMarkup(<PieWheel games={games([0, 0, 0])} spinning={false}/>);
   expect(markup.match(/<path /g)).toHaveLength(3);
   expect(markup).not.toContain('NaN');
+});
+
+it('para a roleta com o ponteiro sobre a fatia vencedora', () => {
+  const slices = getSlices(games([5, 0, 3, -2, 2]));
+  for (const slice of slices.filter(item => item.sweep > 0)) {
+    for (const jitter of [-0.35, 0, 0.35]) {
+      for (const start of [0, 137, 1000]) {
+        const rotation = start + getWinnerRotation(slices, slice.id, 6, jitter) - (start % 360);
+        expect(sliceAtPointer(slices, rotation)).toBe(slice.id);
+        expect(rotation - start).toBeGreaterThan(5 * 360);
+      }
+    }
+  }
+});
+
+it('ignora fatias sem chance ao apontar', () => {
+  const slices = getSlices(games([0, 4, 0]));
+  expect(sliceAtPointer(slices, 0)).toBe('1');
+  expect(sliceAtPointer(slices, 200)).toBe('1');
 });

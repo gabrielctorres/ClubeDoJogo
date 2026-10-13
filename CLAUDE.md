@@ -16,7 +16,7 @@ Stack: Vite + React 19 + TypeScript (strict), react-router-dom, zustand (with `p
 - `npx vitest run src/services/scoring.test.ts`: run a single test file. Add `-t "<test name>"` to run one test.
 - `npm run preview`: serve the built `dist/`.
 
-There is no linter configured. There is no separate Vitest config either, so tests run in the default Node environment. Component tests render with `react-dom/server`'s `renderToStaticMarkup` rather than a DOM (see [src/pages/Roulette.test.tsx](src/pages/Roulette.test.tsx)).
+There is no linter configured. There is no separate Vitest config either, so tests run in the default Node environment. Store tests ([src/store/clubStore.test.ts](src/store/clubStore.test.ts)) opt into jsdom with a `// @vitest-environment jsdom` comment so `persist` has `localStorage`, and reset the store with `useClubStore.setState` in `beforeEach`. Component tests render with `react-dom/server`'s `renderToStaticMarkup` rather than a DOM (see [src/pages/Roulette.test.tsx](src/pages/Roulette.test.tsx)).
 
 ## Architecture
 
@@ -28,27 +28,42 @@ There is no linter configured. There is no separate Vitest config either, so tes
 
 Every game-rule mutation is a store action. Pages are mostly thin views that call those actions.
 
-**Round as a stage machine.** `Round.stage` (the `Stage` union in [src/types/index.ts](src/types/index.ts)) drives the flow. Each stage has its own page in `src/pages/` and its own route. The `/round` route (`ContinueRound` in [src/App.tsx](src/App.tsx)) redirects to the page for the current stage, so a reload resumes the round. Pages advance the round with `setStage(...)`. The actual order is:
+**Round as a stage machine.** `Round.stage` (the `Stage` union in [src/types/index.ts](src/types/index.ts)) drives the flow. The order is:
 
 optionalRules → players → chosen → abilities (only if cards are on) → theme (only if random category is on) → nominations → accessibility → voting → score → roulette → winner
 
-`choosePlayer` decides whether to skip abilities and theme. The stage→path map and stage order are duplicated in `App.tsx` and [src/components/Layout.tsx](src/components/Layout.tsx). Layout also uses them for the progress bar and back button. When you add a stage, update the `Stage` type and both maps.
+- [src/services/stageFlow.ts](src/services/stageFlow.ts) is the single source of the order, paths and labels (`STAGES`), and of `getNextStage`/`getPreviousStage` (which skip inactive stages), `canGoBack` and `stageNumber`.
+- **The URL follows the store, not the other way round.** In [src/App.tsx](src/App.tsx) every stage route is wrapped in `StageRoute`, which redirects to `round.stage`'s path when they differ. Pages therefore never call `navigate` to move through the round. They call `useAdvanceStage()` ([src/hooks/useAdvanceStage.ts](src/hooks/useAdvanceStage.ts)) or `setStage`, and the guard navigates.
+- Because of that, actions that animate before moving on (`choosePlayer`, `spinWinner`) do **not** change the stage. The page advances when its animation ends.
+- "Voltar" in [src/components/Layout.tsx](src/components/Layout.tsx) only goes back to the stages listed in `REVISITABLE`. Other stages (draw, nominations, votes, roulette) are one-way so they can't be redone.
+- To add a stage, update the `Stage` type, `STAGES`, the `pages` map in `App.tsx` and, if it is optional, `isStageActive`.
+- Page headings use `<StageEyebrow stage>` so "FASE N" counts only active stages.
 
 **Pure rule logic lives in `src/services/`.** This code is unit-tested:
 - `scoring.ts`: the accessibility bonus (+2 F2P, +1.5 "Steam Verde", +0.5 per owner) and vote points. The Escolhido's vote is worth 2, unless the cards rule is on and the drawn card isn't `democracy`.
-- `weightedRandom.ts`: draws the roulette winner using `crypto.getRandomValues`, weighted by `max(0, finalScore)`.
-- `chosenPlayer.ts`: computes cooldown eligibility. The store's `choosePlayer` resets the cycle once nobody is eligible.
+- `weightedRandom.ts`: draws the roulette winner using `crypto.getRandomValues`, weighted by `max(0, finalScore)`. `calculateWinProbability` uses the same weights; use it for any displayed or stored chance. `secureRandomInt` is the shared random helper.
+- `chosenPlayer.ts`: computes cooldown eligibility. The store's `choosePlayer` resets the cycle once nobody is eligible, and it is a no-op once the round has an Escolhido.
 - `abilities.ts`: defines the optional "cards" abilities (`AbilityId`).
-- `randomCategory.ts`: fetches a theme from the freetogame.com API, falls back to a local list, and filters out multiplayer-type categories.
+- `randomCategory.ts`: fetches a theme from the freetogame.com API, falls back to a local list, and filters out multiplayer-type categories. `getRerollLimit` holds the reroll rule.
+- `backup.ts`: `createBackup` and the `isBackup` guard.
 
-**Score invariants.** `updateGameScores` recomputes `accessibilityScore`, `voteScore` and `finalScore` from scratch. `updateGame` and `vote` both call it. Ability effects instead change `finalScore` directly through `adjustGameScore`, `transferPoint` and `markEffect`. Each effect is tracked in `round.usedEffects` so it can only apply once.
+**Score invariants.** `finalScore = accessibilityScore + voteScore + effectScore`, always recomputed by `updateGameScores`. Ability effects (`adjustGameScore`, `transferPoint`) change `effectScore`, never `finalScore` directly, so they survive later recalculations. Each effect is tracked in `round.usedEffects`, keyed by `AbilityId`, so it can only apply once.
 
-**Persistence migrations.** The store's `merge` runs `normalizeRound` so that older persisted rounds (for example the legacy `rerollUsed` boolean) gain any new fields. Make new `Round` or `OptionalRules` fields backward compatible there.
+**Persistence migrations.** The store's `merge` runs `normalizeRound` so that older persisted rounds gain any new fields: the legacy `rerollUsed` boolean, the `effectScore` derived from old scores, and the `fiscal` → `fun-inspector` effect key. Make new `Round` or `OptionalRules` fields backward compatible there. Ephemeral round state (such as the pending extra nomination or the "Finge Que Não Viu" replacement card) is stored or derived from the round, not kept in `useState`, so a reload never strands the page.
 
-**Backup.** [src/pages/History.tsx](src/pages/History.tsx) exports and imports JSON backups `{version:1, exportedAt, players, chosenHistory, history}`. `importBackup` validates the file with the `isBackup` guard and clears any in-progress round.
+**Backup and history.** [src/pages/History.tsx](src/pages/History.tsx) exports and imports JSON backups `{version:1, exportedAt, players, chosenHistory, history}`. `importBackup` validates the file with the `isBackup` guard and clears any in-progress round. `RoundResult.nominatedByIds` is optional, because older results only stored names. Stats match players by ID and fall back to the name.
 
-**Styling.** The app uses plain CSS files in `src/styles/`, all imported in [src/main.tsx](src/main.tsx). There are no CSS modules or framework. Shared primitives (`Button`, `Card`, `Confetti`) are in [src/components/UI.tsx](src/components/UI.tsx).
+**Styling.** The app uses plain CSS files in `src/styles/`, all imported in [src/main.tsx](src/main.tsx). There are no CSS modules or framework. Shared primitives (`Button`, `Card`, `Confetti`, `StageEyebrow`) are in [src/components/UI.tsx](src/components/UI.tsx).
+
+**Game feel.** Interaction feedback is a deliberate part of the app:
+- [src/feel/sound.ts](src/feel/sound.ts): `sfx.*` sounds synthesized with Web Audio (there are no audio files). There is a mute toggle in the header, and the preference is kept in `localStorage` under its own key, outside the store.
+- [src/feel/burst.ts](src/feel/burst.ts): click particles created directly in the DOM.
+- [src/components/Feel.tsx](src/components/Feel.tsx): `CountUp` (animated numbers) and `ScoreDelta` (floating "+2"/"-3").
+- [src/styles/feel.css](src/styles/feel.css): the related styles.
+- `Button` plays `sound` (default `click`, `null` when the page plays its own) and bursts particles on primary buttons. A clickable `Card` lifts on hover and presses on tap, and `delay` staggers card entrances.
+- The roulette lands on the real winner: `getSlices`, `getWinnerRotation` and `sliceAtPointer` in [src/pages/Roulette.tsx](src/pages/Roulette.tsx) are tested.
+- framer-motion controls `transform` on animated elements, so don't put CSS `transition`/`transform` on those same properties. `MotionConfig reducedMotion="user"` and the `prefers-reduced-motion` CSS rules turn motion down for users who ask for it.
 
 ## Code style
 
-Much of the existing code is written in a dense, mostly single-line style: many imports per line and one-line components and store actions. Newer code (for example `randomCategory.ts` and parts of the store) is formatted normally. When editing a file, match its local style.
+Some files (for example `UI.tsx`, parts of `Theme.tsx`, `Players.tsx` and `Roulette.tsx`) still use a dense, single-line style. The store, services and most pages are formatted normally. When you substantially change a dense file, reformat it to the readable style.

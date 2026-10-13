@@ -10,16 +10,17 @@
 
 - Cada participante indica **exatamente 1 jogo** por rodada.
 - Duas ou mais pessoas podem indicar o mesmo jogo. Nesse caso, o jogo permanece como **uma única opção**, mas fica registrado quem o indicou.
-- A indicação deve ocorrer **antes** do sorteio do Escolhido.
+- A indicação ocorre **depois** do sorteio do Escolhido (e, se ativas, depois das cartas de habilidade e do tema da rodada).
 
 ---
 
 ## 2. Sorteio do Escolhido
 
-- Antes da votação, uma pessoa elegível é sorteada para ser o **Escolhido** da rodada.
+- No início da rodada, antes das indicações, uma pessoa elegível é sorteada para ser o **Escolhido**.
 - O Escolhido possui **poder de voto 2**. Os demais participantes possuem **poder de voto 1**.
 - Quem já foi Escolhido no ciclo atual fica fora dos próximos sorteios até que todos os outros membros também tenham ocupado a função.
 - Depois que todos tiverem sido Escolhidos uma vez, o ciclo é reiniciado.
+- Quem foi o Escolhido do mês anterior **não pode** ser sorteado no mês seguinte, nem mesmo no primeiro sorteio de um novo ciclo.
 
 ---
 
@@ -70,7 +71,7 @@ Após as indicações, cada jogo recebe bônus conforme sua facilidade de acesso
 
 - Uma pessoa conta como tendo sido Escolhida assim que ocupa a função na rodada, **independentemente de o jogo indicado por ela vencer ou não**.
 - O membro não volta ao sorteio de Escolhido até que todos os demais participantes também tenham ocupado a função.
-- Quando todos tiverem participado, o histórico do ciclo é zerado e uma nova sequência começa.
+- Quando todos tiverem participado, o histórico do ciclo é zerado e uma nova sequência começa, sem incluir no primeiro sorteio quem acabou de ser o Escolhido.
 
 ---
 
@@ -93,9 +94,9 @@ Chance na roleta = Pontuação do jogo ÷ Soma da pontuação de todos os jogos
 
 ## 9. Checklist rápido para cada mês
 
+- [ ] Sortear o Escolhido apenas entre quem está elegível no ciclo.
 - [ ] Coletar 1 indicação de cada membro.
 - [ ] Juntar indicações repetidas sem remover o vínculo com quem indicou.
-- [ ] Sortear o Escolhido apenas entre quem está elegível no ciclo.
 - [ ] Preencher Free-to-Play, Steam Verde e quantidade de donos para cada jogo.
 - [ ] Calcular os bônus de acessibilidade.
 - [ ] Registrar os votos, aplicando peso 2 ao voto do Escolhido.

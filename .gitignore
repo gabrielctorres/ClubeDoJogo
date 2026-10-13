@@ -1,3 +1,26 @@
+# Dependências e build
 node_modules/
 dist/
 *.tsbuildinfo
+
+# Backups com dados reais do grupo (importados pelo app, não versionados)
+backups/
+
+# Vercel
+.vercel/
+
+# Variáveis de ambiente
+.env
+.env.*
+!.env.example
+
+# Logs
+npm-debug.log*
+*.log
+
+# Sistema e editores
+.DS_Store
+Thumbs.db
+.vscode/*
+!.vscode/extensions.json
+.idea/

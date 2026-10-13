@@ -1,4 +1,5 @@
 import type { AbilityId } from '../types';
+import { secureRandomInt } from './weightedRandom';
 
 export interface Ability { id: AbilityId; name: string; description: string }
 
@@ -14,7 +15,12 @@ export const abilities: Ability[] = [
 ];
 
 export function randomAbilities(amount: number, excluded: AbilityId[] = []) {
-  return abilities.filter(a => !excluded.includes(a.id)).sort(() => Math.random() - .5).slice(0, amount);
+  const pool = abilities.filter(ability => !excluded.includes(ability.id));
+  for (let i = pool.length - 1; i > 0; i--) {
+    const j = secureRandomInt(i + 1);
+    [pool[i], pool[j]] = [pool[j], pool[i]];
+  }
+  return pool.slice(0, amount);
 }
 
-export function getAbility(id: AbilityId | null) { return abilities.find(a => a.id === id); }
+export function getAbility(id: AbilityId | null | undefined) { return abilities.find(a => a.id === id); }

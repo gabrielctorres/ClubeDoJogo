@@ -1,1 +1,3 @@
-.backup-card{display:grid;gap:16px;margin:24px 0}.backup-card h3{font-size:19px}.backup-card p{margin:5px 0 0;font-size:14px}.backup-actions{display:grid;gap:10px}.backup-actions .btn{width:100%}@media(min-width:600px){.backup-card{grid-template-columns:1fr auto;align-items:center}.backup-actions{display:flex}.backup-actions .btn{width:auto}}
+.backup-card{display:grid;gap:16px;margin:24px 0}.backup-card h3{font-size:19px}
+.btn.danger{background:transparent;color:var(--pink);box-shadow:none}
+.btn.danger:hover:not(:disabled){background:#fff0f3}.backup-card p{margin:5px 0 0;font-size:14px}.backup-actions{display:grid;gap:10px}.backup-actions .btn{width:100%}@media(min-width:600px){.backup-card{grid-template-columns:1fr auto;align-items:center}.backup-actions{display:flex}.backup-actions .btn{width:auto}}
