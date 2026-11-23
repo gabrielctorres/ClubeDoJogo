@@ -2,7 +2,7 @@ import { useEffect, useRef, useState, type RefObject } from 'react';
 import { animate, motion, useMotionValue, type AnimationPlaybackControls, type MotionValue } from 'framer-motion';
 import { RotateCw } from 'lucide-react';
 import { useClubStore } from '../store/clubStore';
-import { calculateWinProbability } from '../services/weightedRandom';
+import { calculateWinProbability, rouletteWeight } from '../services/weightedRandom';
 import { Button, Card, StageEyebrow } from '../components/UI';
 import { sfx } from '../feel/sound';
 import type { GameEntry } from '../types';
@@ -13,12 +13,12 @@ const slicePath=(start:number,end:number)=>{const[x1,y1]=point(start,82);const[x
 
 export interface Slice { id: string; start: number; sweep: number }
 
-/** Fatias da roleta em graus, a partir do topo e no sentido horário. Pontuação negativa vale 0. */
+/** Fatias da roleta em graus, a partir do topo e no sentido horário, com os pesos de `rouletteWeight`. */
 export function getSlices(games: Pick<GameEntry, 'id' | 'finalScore'>[]): Slice[] {
-  const total = games.reduce((sum, game) => sum + Math.max(game.finalScore, 0), 0);
+  const total = games.reduce((sum, game) => sum + rouletteWeight(game), 0);
   let start = 0;
   return games.map(game => {
-    const sweep = total ? Math.max(game.finalScore, 0) / total * 360 : 360 / games.length;
+    const sweep = rouletteWeight(game) / total * 360;
     const slice = { id: game.id, start, sweep };
     start += sweep;
     return slice;

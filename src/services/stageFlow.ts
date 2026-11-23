@@ -1,4 +1,5 @@
 import type { Round, Stage } from '../types';
+import { getNominatorIds, isBlockedNominator } from './nominations';
 
 type FlowRound = Pick<Round, 'stage' | 'optionalRules'>;
 
@@ -52,9 +53,14 @@ export function canGoBack(round: FlowRound) {
 export const stageNumber = (round: Pick<Round, 'optionalRules'>, stage: Stage) =>
   getActiveStages(round).indexOf(stage) + 1;
 
-/** O Escolhido ainda pode indicar o jogo extra da carta "Só Mais Um, Confia". */
-export const awaitingExtraGame = (round: Pick<Round, 'currentIndex' | 'participantIds' | 'optionalRules' | 'extraGameUsed'>) =>
-  round.currentIndex >= round.participantIds.length
+/**
+ * O Escolhido ainda pode indicar o jogo extra da carta "Só Mais Um, Confia".
+ * Se ele venceu no mês anterior e está sem indicar, não ganha o extra.
+ */
+export const awaitingExtraGame = (round: Pick<Round, 'currentIndex' | 'participantIds' | 'optionalRules' | 'extraGameUsed'>
+  & Partial<Pick<Round, 'chosenPlayerId' | 'blockedNominatorIds'>>) =>
+  round.currentIndex >= getNominatorIds(round).length
+  && !isBlockedNominator(round, round.chosenPlayerId ?? '')
   && round.optionalRules.cards.enabled
   && round.optionalRules.cards.selected === 'one-more'
   && !round.extraGameUsed;

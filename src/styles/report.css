@@ -1,0 +1,203 @@
+/* Edição do nome do jogo na acessibilidade */
+.game-title .edit-name {
+  padding: 7px;
+  line-height: 0;
+}
+.rename {
+  flex: 1;
+  min-width: 0;
+}
+.rename-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+.rename-row input:not([type=checkbox]) {
+  padding: 8px 10px;
+  font-weight: 800;
+}
+.rename-row .icon-btn {
+  padding: 8px;
+  line-height: 0;
+}
+.rename-error {
+  display: block;
+  margin-top: 5px;
+  color: var(--pink);
+  font-weight: 800;
+  font-size: 12px;
+}
+
+/* Aviso de quem só vota nas indicações */
+.center-step .blocked-notice {
+  display: flex;
+  gap: 10px;
+  align-items: flex-start;
+  margin: 16px 0 0;
+  background: #fff8e3;
+  border-color: #f4dfa6;
+  color: #7a5a00;
+  font-size: 14px;
+}
+.blocked-notice svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+/* Cards do histórico */
+.history-card {
+  cursor: pointer;
+}
+.history-card-foot {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-top: 10px;
+}
+.history-card-foot span {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  color: var(--primary);
+  font-weight: 900;
+  font-size: 13px;
+}
+
+/* Relatório do mês */
+.report .eyebrow {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+.report-summary {
+  margin-bottom: 26px;
+}
+.report-line {
+  display: flex;
+  justify-content: space-between;
+  gap: 16px;
+  margin: 0;
+  padding: 9px 0;
+  border-bottom: 1px solid var(--line);
+  font-size: 14px;
+}
+.report-line:last-child {
+  border-bottom: 0;
+}
+.report-line span {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  flex-shrink: 0;
+}
+.report-line b {
+  color: var(--ink);
+  text-align: right;
+}
+.report-section-title {
+  margin: 8px 0 0;
+}
+.report-games {
+  display: grid;
+  gap: 16px;
+  margin: 16px 0 24px;
+}
+.report-game.winner {
+  border-color: var(--yellow);
+  box-shadow: 0 5px 0 #e6af35;
+}
+.report-game-head {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 8px;
+}
+.report-game-head h3 {
+  flex: 1;
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+.report-winner-tag {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  background: #fff0c7;
+  color: #916900;
+  border-radius: 10px;
+  padding: 4px 8px;
+  font-size: 12px;
+  font-weight: 900;
+  white-space: nowrap;
+}
+.report-votes {
+  display: grid;
+  gap: 8px;
+  padding: 10px 0;
+  border-bottom: 1px solid var(--line);
+  color: var(--muted);
+  font-size: 14px;
+}
+.report-votes > div {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+.report-votes em {
+  font-size: 13px;
+}
+.report-vote {
+  background: #f4f1ff;
+  color: var(--ink);
+  border-radius: 10px;
+  padding: 4px 9px;
+  font-weight: 800;
+  font-size: 13px;
+}
+.report-vote b {
+  color: var(--primary);
+}
+.report-score {
+  flex-wrap: wrap;
+  gap: 8px 14px;
+  margin-top: 12px;
+}
+.report-score strong {
+  margin-left: auto;
+  color: var(--primary);
+}
+.report-table-card h3 {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+.report-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-size: 14px;
+}
+.report-table th {
+  text-align: left;
+  color: var(--muted);
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: .5px;
+  padding: 0 6px 8px;
+}
+.report-table td {
+  padding: 9px 6px;
+  border-top: 1px solid var(--line);
+  font-weight: 700;
+  overflow-wrap: anywhere;
+}
+.report-table td:last-child,
+.report-table th:last-child {
+  text-align: right;
+  white-space: nowrap;
+}
+
+@media (min-width: 700px) {
+  .report-games {
+    grid-template-columns: repeat(2, 1fr);
+  }
+}

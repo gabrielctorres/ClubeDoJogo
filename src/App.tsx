@@ -7,6 +7,7 @@ import { STAGES, stagePath } from './services/stageFlow';
 import type { Stage } from './types';
 import Home from './pages/Home';
 import History from './pages/History';
+import HistoryDetail from './pages/HistoryDetail';
 import OptionalRules from './pages/OptionalRules';
 import Players from './pages/Players';
 import Chosen from './pages/Chosen';
@@ -47,6 +48,7 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home/>}/>
         <Route path="/history" element={<History/>}/>
+        <Route path="/history/:id" element={<HistoryDetail/>}/>
         <Route path="/round" element={<ContinueRound/>}/>
         {STAGES.map(({ stage, path }) => {
           const Page = pages[stage];

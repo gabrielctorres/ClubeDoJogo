@@ -11,7 +11,13 @@ describe('backup', () => {
   it('aceita backups antigos, sem nominatedByIds', () => expect(isBackup(backup)).toBe(true));
   it('aceita backups novos, com nominatedByIds', () =>
     expect(isBackup({ ...backup, history: [{ ...result, nominatedByIds: ['p1'] }] })).toBe(true));
+  it('aceita backups com relatório da rodada', () => {
+    const report = { participants: [{ id: 'p1', name: 'Ana' }], blockedNominators: [], category: null, ability: null,
+      games: [{ name: 'Valheim', votes: [] }] };
+    expect(isBackup({ ...backup, history: [{ ...result, report }] })).toBe(true);
+  });
   it.each([
+    ['relatório inválido', { ...backup, history: [{ ...result, report: { games: 'x' } }] }],
     ['nulo', null],
     ['versão errada', { ...backup, version: 2 }],
     ['jogador inválido', { ...backup, players: [{ id: 1 }] }],

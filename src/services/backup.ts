@@ -7,6 +7,16 @@ const isStringArray = (value: unknown): value is string[] => Array.isArray(value
 const isPlayer = (entry: unknown): entry is Player => !!entry && typeof entry === 'object'
   && typeof (entry as Player).id === 'string' && typeof (entry as Player).name === 'string';
 
+/** Checagem leve do relatório: ele só é exibido, então basta a estrutura principal estar lá. */
+const isReport = (value: unknown) => {
+  if (!value || typeof value !== 'object') return false;
+  const report = value as Record<string, unknown>;
+  return Array.isArray(report.participants) && report.participants.every(isPlayer)
+    && Array.isArray(report.blockedNominators) && report.blockedNominators.every(isPlayer)
+    && Array.isArray(report.games) && report.games.every(game => !!game && typeof game === 'object'
+      && typeof (game as { name?: unknown }).name === 'string' && Array.isArray((game as { votes?: unknown }).votes));
+};
+
 const isResult = (entry: unknown): entry is RoundResult => {
   if (!entry || typeof entry !== 'object') return false;
   const result = entry as RoundResult;
@@ -15,7 +25,8 @@ const isResult = (entry: unknown): entry is RoundResult => {
     && typeof result.winnerGameName === 'string' && isStringArray(result.nominatedBy)
     && (result.nominatedByIds === undefined || isStringArray(result.nominatedByIds))
     && typeof result.chosenPlayerId === 'string' && typeof result.chosenPlayerName === 'string'
-    && Number.isFinite(result.finalScore) && Number.isFinite(result.probability);
+    && Number.isFinite(result.finalScore) && Number.isFinite(result.probability)
+    && (result.report === undefined || isReport(result.report));
 };
 
 export const isBackup = (data: unknown): data is ClubBackup => {

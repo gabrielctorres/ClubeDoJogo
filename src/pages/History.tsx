@@ -1,6 +1,6 @@
 import { useRef } from 'react';
-import { Link } from 'react-router-dom';
-import { CalendarDays, Crown, Download, Trash2, Trophy, Upload } from 'lucide-react';
+import { Link, useNavigate } from 'react-router-dom';
+import { CalendarDays, ChevronRight, Crown, Download, Trash2, Trophy, Upload } from 'lucide-react';
 import { useClubStore } from '../store/clubStore';
 import { createBackup } from '../services/backup';
 import type { Player, RoundResult } from '../types';
@@ -16,6 +16,7 @@ const topPlayer = (players: Player[], count: (player: Player) => number) =>
 export default function History() {
   const { history, players, chosenHistory, importBackup, clearHistory } = useClubStore();
   const fileRef = useRef<HTMLInputElement>(null);
+  const navigate = useNavigate();
   const mostWins = topPlayer(players, player => history.filter(h => nominatedByPlayer(h, player)).length);
   const mostChosen = topPlayer(players, player => history.filter(h => h.chosenPlayerId === player.id).length);
   const bestGame = history.slice().sort((a, b) => b.finalScore - a.finalScore)[0]?.winnerGameName;
@@ -57,12 +58,13 @@ export default function History() {
     </Card>
     {history.length === 0
       ? <div className="empty"><Trophy size={42}/><p>Nenhuma rodada finalizada ainda.</p></div>
-      : <div className="history-list">{history.map((h, i) => <Card key={h.id} delay={Math.min(i, 8) * 0.06} className="history-card">
+      : <div className="history-list">{history.map((h, i) => <Card key={h.id} delay={Math.min(i, 8) * 0.06} className="history-card"
+        onClick={() => navigate(`/history/${h.id}`)}>
         <div className="history-date"><CalendarDays size={16}/> {new Date(h.date).toLocaleDateString('pt-BR', { month: 'long', year: 'numeric' })}</div>
         <h3>{h.winnerGameName}</h3>
         <p>Indicado por {h.nominatedBy.join(', ')}</p>
         <p><Crown size={15}/> Escolhido: {h.chosenPlayerName}</p>
-        <strong>{h.finalScore} pontos</strong>
+        <div className="history-card-foot"><strong>{h.finalScore} pontos</strong><span>Ver relatório <ChevronRight size={16}/></span></div>
       </Card>)}</div>}
     <Card className="stats-card">
       <h3>Estatísticas</h3>

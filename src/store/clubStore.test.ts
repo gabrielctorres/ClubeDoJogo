@@ -90,21 +90,55 @@ describe('indicações e votos', () => {
     store().updateGame(gameId('Valheim'), { steamGreen: true });
     const valheim = round().games.find(g => g.name === 'Valheim')!;
     expect(valheim.effectScore).toBe(-2);
-    expect(valheim.finalScore).toBe(2 + 1.5 - 2);
-    expect(round().games.find(g => g.name === 'Hades')!.finalScore).toBe(-1);
+    expect(valheim.finalScore).toBe(1 + 2 + 1 - 2); // base + F2P + Steam Verde + efeitos
+    expect(round().games.find(g => g.name === 'Hades')!.finalScore).toBe(1 - 1);
+  });
+
+  it('renomeia um jogo, mas recusa nome vazio ou repetido', () => {
+    store().addNomination('Valhem', playerId('Ana'));
+    store().addNomination('Hades', playerId('Bia'));
+    expect(store().renameGame(gameId('Valhem'), '  Valheim ')).toBe(true);
+    expect(round().games.map(g => g.name)).toEqual(['Valheim', 'Hades']);
+    expect(store().renameGame(gameId('Valheim'), 'hades')).toBe(false);
+    expect(store().renameGame(gameId('Valheim'), '   ')).toBe(false);
+    expect(round().games.map(g => g.name)).toEqual(['Valheim', 'Hades']);
+  });
+});
+
+describe('quem venceu no mês anterior só vota', () => {
+  it('bloqueia a indicação de quem indicou o último vencedor', () => {
+    ['Ana', 'Bia', 'Caio'].forEach(name => store().addPlayer(name));
+    useClubStore.setState({ history: [{ id: 'r', date: '2026-01-01', winnerGameId: 'g', winnerGameName: 'Hades', nominatedBy: ['Bia'],
+      nominatedByIds: [playerId('Bia')], chosenPlayerId: '', chosenPlayerName: '', finalScore: 1, probability: 1 }] });
+    store().prepareRound();
+    store().startRound(store().players.map(p => p.id));
+    expect(round().blockedNominatorIds).toEqual([playerId('Bia')]);
+
+    store().choosePlayer();
+    store().addNomination('Valheim', playerId('Bia'));
+    expect(round().games).toEqual([]);
+    store().addNomination('Valheim', playerId('Ana'));
+    store().addNomination('Hades', playerId('Caio'));
+    expect(round().games.map(g => g.name)).toEqual(['Valheim', 'Hades']);
+    expect(round().currentIndex).toBe(2);
+
+    // Bia continua votando normalmente.
+    store().vote({ playerId: playerId('Bia'), gameId: gameId('Hades'), points: 1 });
+    expect(round().games.find(g => g.name === 'Hades')!.voteScore).toBeGreaterThan(0);
   });
 });
 
 describe('roleta e fim da rodada', () => {
-  it('não gira de novo e grava probabilidade e IDs no histórico', () => {
+  it('não gira de novo e grava probabilidade, IDs e relatório no histórico', () => {
     startWith('Ana', 'Bia');
     store().choosePlayer();
     store().addNomination('Valheim', playerId('Ana'));
     store().addNomination('Hades', playerId('Bia'));
-    store().updateGame(gameId('Valheim'), { freeToPlay: true }); // 2 pontos
-    store().adjustGameScore(gameId('Hades'), -2, 'coin-flip'); // negativo não conta na roleta
+    store().updateGame(gameId('Valheim'), { ownedBy: [playerId('Bia')], steamGreen: true }); // 1 + 0,5 + 1
+    store().adjustGameScore(gameId('Hades'), -2, 'coin-flip'); // negativo vale peso 1 na roleta
+    store().vote({ playerId: playerId('Bia'), gameId: gameId('Valheim'), points: 1 });
     store().spinWinner();
-    expect(round().weightedWinnerId).toBe(gameId('Valheim'));
+    expect([gameId('Valheim'), gameId('Hades')]).toContain(round().weightedWinnerId);
     useClubStore.setState({ round: { ...round(), weightedWinnerId: gameId('Hades') } });
     store().spinWinner();
     expect(round().weightedWinnerId).toBe(gameId('Hades'));
@@ -113,8 +147,16 @@ describe('roleta e fim da rodada', () => {
     const [result] = store().history;
     expect(store().round).toBeUndefined();
     expect(result.winnerGameName).toBe('Hades');
-    expect(result.probability).toBe(0);
+    expect(result.probability).toBe(1 / 4.5); // pesos 3,5 (2,5 + 1 voto) e 1
     expect(result.nominatedByIds).toEqual([playerId('Bia')]);
+
+    const report = result.report!;
+    expect(report.participants.map(p => p.name)).toEqual(['Ana', 'Bia']);
+    const valheim = report.games.find(g => g.name === 'Valheim')!;
+    expect(valheim.nominatedBy).toEqual([{ id: playerId('Ana'), name: 'Ana' }]);
+    expect(valheim.ownedBy.map(p => p.name)).toEqual(['Bia']);
+    expect(valheim.votes).toEqual([{ player: { id: playerId('Bia'), name: 'Bia' }, points: 1 }]);
+    expect(valheim.probability).toBe(3.5 / 4.5);
   });
 });
 
@@ -141,6 +183,9 @@ describe('migração de rodadas salvas', () => {
     } as unknown as Round;
     const normalized = normalizeRound(old)!;
     expect(normalized.games[0].effectScore).toBe(-3);
+    expect(normalized.games[0].emulator).toBe(false);
+    expect(normalized.games[0].finalScore).toBe(1 + 2 - 3); // agora com o ponto base
+    expect(normalized.blockedNominatorIds).toEqual([]);
     expect(normalized.usedEffects).toEqual(['fun-inspector']);
     expect(normalized.optionalRules.randomCategory).toMatchObject({ rerollsUsed: 1, drawnCategories: ['RPG'] });
     expect(normalized.optionalRules.cards.replacement).toBeNull();

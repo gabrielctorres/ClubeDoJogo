@@ -14,11 +14,16 @@ it('preserva as letras e o nome completo acessível', () => {
   expect(markup).toContain('<title>Jogo com nome longo 0</title>');
 });
 
-it('desenha um círculo inteiro quando só um jogo tem chance', () => {
-  const markup = renderToStaticMarkup(<PieWheel games={games([2, 0, -1])} spinning={false}/>);
+it('desenha um círculo inteiro quando só há um jogo', () => {
+  const markup = renderToStaticMarkup(<PieWheel games={games([3])} spinning={false}/>);
   expect(markup).toContain('r="82"');
   expect(markup).not.toContain('<path');
   expect(markup).not.toContain('NaN');
+});
+
+it('dá fatia de peso mínimo 1 a jogos com pontuação zero ou negativa', () => {
+  const slices = getSlices(games([2, 0, -1]));
+  expect(slices.map(slice => slice.sweep)).toEqual([180, 90, 90]);
 });
 
 it('distribui as fatias igualmente quando todos estão sem pontos', () => {
@@ -40,8 +45,10 @@ it('para a roleta com o ponteiro sobre a fatia vencedora', () => {
   }
 });
 
-it('ignora fatias sem chance ao apontar', () => {
-  const slices = getSlices(games([0, 4, 0]));
-  expect(sliceAtPointer(slices, 0)).toBe('1');
-  expect(sliceAtPointer(slices, 200)).toBe('1');
+it('aponta a fatia certa com pesos diferentes', () => {
+  // Pesos 1, 2 e 1: fatias de 0–90°, 90–270° e 270–360°.
+  const slices = getSlices(games([0, 2, 0]));
+  expect(sliceAtPointer(slices, 0)).toBe('0');
+  expect(sliceAtPointer(slices, 180)).toBe('1');
+  expect(sliceAtPointer(slices, 45)).toBe('2');
 });

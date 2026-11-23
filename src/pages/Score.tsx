@@ -3,6 +3,7 @@ import { motion } from 'framer-motion';
 import { Button, Card, StageEyebrow } from '../components/UI';
 import { CountUp, ScoreDelta } from '../components/Feel';
 import { getAbility } from '../services/abilities';
+import { BASE_SCORE } from '../services/scoring';
 import { secureRandomInt } from '../services/weightedRandom';
 import { useClubStore } from '../store/clubStore';
 import { useAdvanceStage } from '../hooks/useAdvanceStage';
@@ -87,6 +88,7 @@ export default function Score() {
         <motion.div initial={{ width: 0 }} animate={{ width: `${Math.max(0, g.finalScore) / max * 100}%` }} transition={{ delay: 0.2 + i * 0.08, type: 'spring', stiffness: 90, damping: 16 }}/>
       </div>
       <div className="score-detail">
+        <span>Base {BASE_SCORE}</span>
         <span>Acesso {g.accessibilityScore}</span>
         <span>Votos {g.voteScore}</span>
         {g.effectScore !== 0 && <span>Habilidade {g.effectScore > 0 ? '+' : ''}{g.effectScore}</span>}

@@ -2,9 +2,11 @@ import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
 import type { AbilityId, CardsRule, GameEntry, OptionalRules, Player, RandomCategoryRule, Round, RoundResult, Stage, Vote } from '../types';
 import { calculateWeightedWinner, calculateWinProbability, secureRandomInt } from '../services/weightedRandom';
-import { calculateAccessibilityScore, calculatePlayerVotePoints, calculateVoteScore, updateGameScores } from '../services/scoring';
+import { BASE_SCORE, calculateAccessibilityScore, calculatePlayerVotePoints, calculateVoteScore, updateGameScores } from '../services/scoring';
 import { randomAbilities } from '../services/abilities';
 import { isBackup } from '../services/backup';
+import { getBlockedNominatorIds, getLastWinnerNominatorIds, getNominatorIds, isBlockedNominator } from '../services/nominations';
+import { createRoundReport } from '../services/report';
 
 const id = () => crypto.randomUUID();
 
@@ -16,6 +18,7 @@ const emptyRules = (): OptionalRules => ({
 const newRound = (patch: Partial<Round> = {}): Round => ({
   id: id(), participantIds: [], games: [], chosenPlayerId: '', chosenPlayerName: '',
   stage: 'optionalRules', currentIndex: 0, optionalRules: emptyRules(), extraGameUsed: false, usedEffects: [],
+  blockedNominatorIds: [],
   ...patch,
 });
 
@@ -29,10 +32,15 @@ export const normalizeRound = (round?: Partial<Round>): Round | undefined => {
   const oldCards = round.optionalRules?.cards;
   return {
     ...round as Round,
-    games: (round.games ?? []).map(game => ({
-      ...game,
-      effectScore: game.effectScore ?? game.finalScore - calculateAccessibilityScore(game) - calculateVoteScore(game),
-    })),
+    // Recalcula o placar para incluir o ponto base nas rodadas salvas antes dele.
+    games: (round.games ?? []).map(game => {
+      const emulator = game.emulator ?? false;
+      return updateGameScores({
+        ...game,
+        emulator,
+        effectScore: game.effectScore ?? game.finalScore - calculateAccessibilityScore({ ...game, emulator }) - calculateVoteScore(game),
+      });
+    }),
     optionalRules: {
       randomCategory: {
         enabled: oldCategory?.enabled ?? false,
@@ -48,6 +56,7 @@ export const normalizeRound = (round?: Partial<Round>): Round | undefined => {
       },
     },
     extraGameUsed: round.extraGameUsed ?? false,
+    blockedNominatorIds: round.blockedNominatorIds ?? [],
     usedEffects: (round.usedEffects ?? []).map(effect => legacyEffects[effect] ?? effect),
   };
 };
@@ -70,6 +79,8 @@ interface ClubState {
   addNomination: (name: string, playerId: string) => void;
   choosePlayer: () => void;
   updateGame: (gameId: string, patch: Partial<GameEntry>) => void;
+  /** Corrige o nome de um jogo indicado. Retorna `false` se o nome for vazio ou de outro jogo da rodada. */
+  renameGame: (gameId: string, name: string) => boolean;
   adjustGameScore: (gameId: string, delta: number, effect: string) => void;
   transferPoint: (fromId: string, toId: string) => void;
   vote: (vote: Vote) => void;
@@ -103,7 +114,7 @@ const mapGames = (round: Round, fn: (game: GameEntry) => GameEntry): Round =>
 const isDuplicateName = (players: Player[], name: string, exceptId?: string) =>
   players.some(p => p.id !== exceptId && p.name.toLowerCase() === name.toLowerCase());
 
-export const useClubStore = create<ClubState>()(persist((set) => ({
+export const useClubStore = create<ClubState>()(persist((set, get) => ({
   players: [], chosenHistory: [], history: [],
 
   addPlayer: name => set(s => {
@@ -126,6 +137,7 @@ export const useClubStore = create<ClubState>()(persist((set) => ({
     return { round: newRound({
       id: s.round?.id ?? id(),
       participantIds: uniqueIds,
+      blockedNominatorIds: getBlockedNominatorIds(uniqueIds, getLastWinnerNominatorIds(s.history, s.players)),
       stage: 'chosen',
       optionalRules: s.round?.optionalRules ?? emptyRules(),
     }) };
@@ -143,19 +155,21 @@ export const useClubStore = create<ClubState>()(persist((set) => ({
   })),
 
   addNomination: (name, playerId) => set(s => updateRound(s, round => {
+    // Quem indicou o vencedor do mês anterior só vota nesta rodada.
+    if (isBlockedNominator(round, playerId)) return round;
     const normalized = name.trim().toLowerCase();
     const existing = round.games.find(g => g.name.toLowerCase() === normalized);
     const games = existing
       ? round.games.map(g => g.id === existing.id && !g.nominatedBy.includes(playerId) ? { ...g, nominatedBy: [...g.nominatedBy, playerId] } : g)
       : [...round.games, {
-        id: id(), name: name.trim(), nominatedBy: [playerId], freeToPlay: false, steamGreen: false, ownedBy: [], votes: [],
-        accessibilityScore: 0, voteScore: 0, effectScore: 0, finalScore: 0,
+        id: id(), name: name.trim(), nominatedBy: [playerId], freeToPlay: false, steamGreen: false, emulator: false, ownedBy: [], votes: [],
+        accessibilityScore: 0, voteScore: 0, effectScore: 0, finalScore: BASE_SCORE,
       }];
     return {
       ...round,
       games,
       currentIndex: round.currentIndex + 1,
-      extraGameUsed: round.extraGameUsed || round.currentIndex >= round.participantIds.length,
+      extraGameUsed: round.extraGameUsed || round.currentIndex >= getNominatorIds(round).length,
     };
   })),
 
@@ -177,6 +191,14 @@ export const useClubStore = create<ClubState>()(persist((set) => ({
 
   updateGame: (gameId, patch) => set(s => updateRound(s, round =>
     mapGames(round, g => g.id === gameId ? updateGameScores({ ...g, ...patch }) : g))),
+  renameGame: (gameId, name) => {
+    const round = get().round;
+    const normalized = name.trim();
+    if (!round || round.weightedWinnerId || !normalized || !round.games.some(g => g.id === gameId)) return false;
+    if (round.games.some(g => g.id !== gameId && g.name.toLowerCase() === normalized.toLowerCase())) return false;
+    set(s => updateRound(s, current => mapGames(current, g => g.id === gameId ? { ...g, name: normalized } : g)));
+    return true;
+  },
   adjustGameScore: (gameId, delta, effect) => set(s => updateRound(s, round => {
     if (round.usedEffects.includes(effect)) return round;
     return {
@@ -227,6 +249,7 @@ export const useClubStore = create<ClubState>()(persist((set) => ({
       chosenPlayerName: chosen?.name ?? round.chosenPlayerName,
       finalScore: game.finalScore,
       probability: calculateWinProbability(round.games, game.id),
+      report: createRoundReport(round, s.players),
     };
     return { history: [result, ...s.history], round: undefined };
   }),
