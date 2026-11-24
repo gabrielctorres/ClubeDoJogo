@@ -2,11 +2,13 @@ import { useState } from 'react';
 import { Check, Gamepad2, Pencil, X } from 'lucide-react';
 import { useClubStore } from '../store/clubStore';
 import { useAdvanceStage } from '../hooks/useAdvanceStage';
-import { ACCESSIBILITY_BONUS } from '../services/scoring';
+import { ACCESSIBILITY_BONUS, MAX_OWNER_BONUS } from '../services/scoring';
 import { Button, Card, StageEyebrow } from '../components/UI';
 import { CountUp, ScoreDelta } from '../components/Feel';
 import { sfx } from '../feel/sound';
 import type { GameEntry } from '../types';
+
+const formatPoints = (value: number) => value.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
 
 type AccessFlag = 'freeToPlay' | 'steamGreen' | 'emulator';
 
@@ -81,12 +83,12 @@ export default function Accessibility() {
         </button>;
       })}</div>
       <div className="owned">
-        <strong>Quem já possui?</strong>
+        <strong>Quem já possui? <small>(+{formatPoints(ACCESSIBILITY_BONUS.perOwner)} cada, no máximo +{formatPoints(MAX_OWNER_BONUS)})</small></strong>
         <div className="owned-grid">{participants.map(player => {
           const owns = game.ownedBy.includes(player.id);
           return <button key={player.id} className={`owner-chip ${owns ? 'selected' : ''}`}
             onClick={() => toggle(owns, () => updateGame(game.id, { ownedBy: owns ? game.ownedBy.filter(id => id !== player.id) : [...game.ownedBy, player.id] }))}>
-            <span>{player.name.slice(0, 1).toUpperCase()}</span>{player.name}<b>+{ACCESSIBILITY_BONUS.perOwner}</b>
+            <span>{player.name.slice(0, 1).toUpperCase()}</span>{player.name}<b>+{formatPoints(ACCESSIBILITY_BONUS.perOwner)}</b>
           </button>;
         })}</div>
       </div>

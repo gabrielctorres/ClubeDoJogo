@@ -19,7 +19,7 @@
 ## 2. Sorteio do Escolhido
 
 - No início da rodada, antes das indicações, uma pessoa elegível é sorteada para ser o **Escolhido**.
-- O Escolhido possui **poder de voto 2**. Os demais participantes possuem **poder de voto 1**.
+- O voto do Escolhido vale **o dobro** do voto comum: **4 pontos**, contra **2 pontos** dos demais participantes.
 - Quem já foi Escolhido no ciclo atual fica fora dos próximos sorteios até que todos os outros membros também tenham ocupado a função.
 - Depois que todos tiverem sido Escolhidos uma vez, o ciclo é reiniciado.
 - Quem foi o Escolhido do mês anterior **não pode** ser sorteado no mês seguinte, nem mesmo no primeiro sorteio de um novo ciclo.
@@ -30,29 +30,30 @@
 
 Após as indicações, cada jogo recebe bônus conforme sua facilidade de acesso. As informações são cadastradas manualmente.
 
-Todo jogo começa com **1 ponto base**. A acessibilidade é um bônus somado em cima dele.
+Todo jogo começa com **2 pontos base**. A acessibilidade é um bônus somado em cima deles.
 
 | Condição | Bônus |
 |---|---|
 | Gratuito / Free-to-Play | **+2,0 pontos** |
 | Disponível pela "Steam Verde" conforme regra aceita pelo grupo | **+1,0 ponto** |
 | Jogo de Emulador | **+1,0 ponto** |
-| Já possuído por membros do grupo | **+0,5 ponto por membro que possui** |
+| Já possuído por membros do grupo | **+0,5 ponto por membro que possui, no máximo +1,0** |
 
-- Os bônus se somam, sem limite máximo.
+- O bônus de donos para em +1,0 (2 donos). Do 3º dono em diante, não soma mais.
+- Os bônus de tipo (Free-to-Play, Steam Verde, Emulador) se somam entre si e com o de donos.
 
-> **Exemplos:** um jogo gratuito que já pertence a 3 membros fica com **3,5 pontos** de acessibilidade: 2,0 + (3 × 0,5). Um jogo de emulador que 1 membro já tem fica com **1,5**: 1,0 + 0,5. Somando o ponto base, eles começam com 4,5 e 2,5 pontos.
+> **Exemplos:** um jogo gratuito que já pertence a 3 membros fica com **3,0 pontos** de acessibilidade: 2,0 + 1,0 (teto dos donos). Um jogo de emulador que 1 membro já tem fica com **1,5**: 1,0 + 0,5. Somando a base, eles começam com 5,0 e 3,5 pontos.
 
 ---
 
 ## 4. Votação dos membros
 
 - Todos os membros escolhem o jogo em que desejam votar.
-- Cada voto normal vale **1 ponto**.
-- O voto do Escolhido vale **2 pontos**.
+- Cada voto normal vale **2 pontos**.
+- O voto do Escolhido vale **4 pontos**.
 - Os pontos dos votos são somados aos bônus de acessibilidade do jogo.
 
-> **Exemplo:** um jogo com 2,0 pontos de acessibilidade recebe dois votos normais (+2) e o voto do Escolhido (+2). Sua pontuação final será **7,0 pontos**: 1 (base) + 2,0 + 4.
+> **Exemplo:** um jogo com 2,0 pontos de acessibilidade recebe dois votos normais (+4) e o voto do Escolhido (+4). Sua pontuação final será **12,0 pontos**: 2 (base) + 2,0 + 8.
 
 ---
 
@@ -93,7 +94,11 @@ Todo jogo começa com **1 ponto base**. A acessibilidade é um bônus somado em 
 ## 8. Fórmula da rodada
 
 ```
-Pontuação Final = 1 (base) + Bônus de Acessibilidade + Pontos de Votação + Efeitos de cartas
+Pontuação Final = 2 (base)
+                + Tipo (F2P +2, Steam Verde +1, Emulador +1)
+                + Donos (+0,5 cada, no máximo +1)
+                + Pontos de Votação (voto comum 2, Escolhido 4)
+                + Efeitos de cartas
 
 Peso na roleta = máx(1; Pontuação Final)
 Chance na roleta = Peso do jogo ÷ Soma dos pesos de todos os jogos
@@ -108,7 +113,7 @@ Chance na roleta = Peso do jogo ÷ Soma dos pesos de todos os jogos
 - [ ] Juntar indicações repetidas sem remover o vínculo com quem indicou.
 - [ ] Preencher Free-to-Play, Steam Verde, Emulador e quantidade de donos para cada jogo.
 - [ ] Calcular os bônus de acessibilidade.
-- [ ] Registrar os votos, aplicando peso 2 ao voto do Escolhido.
+- [ ] Registrar os votos: 2 pontos por voto comum e 4 pelo voto do Escolhido.
 - [ ] Calcular a pontuação final de cada jogo.
 - [ ] Gerar a roleta ponderada.
 - [ ] Sortear o Jogo do Mês.

@@ -3,7 +3,7 @@ import { persist } from 'zustand/middleware';
 import type { AbilityId, CardsRule, GameEntry, OptionalRules, Player, RandomCategoryRule, Round, RoundResult, Stage, Vote } from '../types';
 import { calculateWeightedWinner, calculateWinProbability, secureRandomInt } from '../services/weightedRandom';
 import { BASE_SCORE, calculateAccessibilityScore, calculatePlayerVotePoints, calculateVoteScore, updateGameScores } from '../services/scoring';
-import { randomAbilities } from '../services/abilities';
+import { EFFECT_POINTS, randomAbilities } from '../services/abilities';
 import { isBackup } from '../services/backup';
 import { getBlockedNominatorIds, getLastWinnerNominatorIds, getNominatorIds, isBlockedNominator } from '../services/nominations';
 import { createRoundReport } from '../services/report';
@@ -30,31 +30,35 @@ export const normalizeRound = (round?: Partial<Round>): Round | undefined => {
   if (!round) return undefined;
   const oldCategory = round.optionalRules?.randomCategory as Partial<RandomCategoryRule> & { rerollUsed?: boolean } | undefined;
   const oldCards = round.optionalRules?.cards;
+  const optionalRules: OptionalRules = {
+    randomCategory: {
+      enabled: oldCategory?.enabled ?? false,
+      category: oldCategory?.category ?? null,
+      drawnCategories: oldCategory?.drawnCategories ?? (oldCategory?.category ? [oldCategory.category] : []),
+      rerollsUsed: oldCategory?.rerollsUsed ?? (oldCategory?.rerollUsed ? 1 : 0),
+    },
+    cards: {
+      enabled: oldCards?.enabled ?? false,
+      options: oldCards?.options ?? [],
+      selected: oldCards?.selected ?? null,
+      replacement: oldCards?.replacement ?? null,
+    },
+  };
+  const chosenPlayerId = round.chosenPlayerId ?? '';
   return {
     ...round as Round,
-    // Recalcula o placar para incluir o ponto base nas rodadas salvas antes dele.
+    // Recalcula o placar com as regras atuais (ponto base, teto de donos, valor do voto).
     games: (round.games ?? []).map(game => {
       const emulator = game.emulator ?? false;
       return updateGameScores({
         ...game,
         emulator,
         effectScore: game.effectScore ?? game.finalScore - calculateAccessibilityScore({ ...game, emulator }) - calculateVoteScore(game),
+        // Votos salvos na escala antiga (1/2) passam para a atual.
+        votes: (game.votes ?? []).map(vote => ({ ...vote, points: calculatePlayerVotePoints({ chosenPlayerId, optionalRules }, vote.playerId) })),
       });
     }),
-    optionalRules: {
-      randomCategory: {
-        enabled: oldCategory?.enabled ?? false,
-        category: oldCategory?.category ?? null,
-        drawnCategories: oldCategory?.drawnCategories ?? (oldCategory?.category ? [oldCategory.category] : []),
-        rerollsUsed: oldCategory?.rerollsUsed ?? (oldCategory?.rerollUsed ? 1 : 0),
-      },
-      cards: {
-        enabled: oldCards?.enabled ?? false,
-        options: oldCards?.options ?? [],
-        selected: oldCards?.selected ?? null,
-        replacement: oldCards?.replacement ?? null,
-      },
-    },
+    optionalRules,
     extraGameUsed: round.extraGameUsed ?? false,
     blockedNominatorIds: round.blockedNominatorIds ?? [],
     usedEffects: (round.usedEffects ?? []).map(effect => legacyEffects[effect] ?? effect),
@@ -208,7 +212,7 @@ export const useClubStore = create<ClubState>()(persist((set, get) => ({
   })),
   transferPoint: (fromId, toId) => set(s => updateRound(s, round => {
     if (round.usedEffects.includes('point-pix') || fromId === toId) return round;
-    const delta = (gameId: string) => gameId === fromId ? -1 : gameId === toId ? 1 : 0;
+    const delta = (gameId: string) => gameId === fromId ? -EFFECT_POINTS.pointPix : gameId === toId ? EFFECT_POINTS.pointPix : 0;
     return {
       ...mapGames(round, g => delta(g.id) ? updateGameScores({ ...g, effectScore: g.effectScore + delta(g.id) }) : g),
       usedEffects: [...round.usedEffects, 'point-pix'],

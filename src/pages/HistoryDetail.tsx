@@ -2,12 +2,13 @@ import { Link, Navigate, useParams } from 'react-router-dom';
 import { CalendarDays, Crown, Lock, Sparkles, Trophy, Users } from 'lucide-react';
 import { useClubStore } from '../store/clubStore';
 import { getAbility } from '../services/abilities';
-import { BASE_SCORE } from '../services/scoring';
 import { Card } from '../components/UI';
 import type { ReportGame, RoundReport } from '../types';
 
 const formatPercent = (value: number) => `${(value * 100).toFixed(1).replace('.', ',')}%`;
 const formatPoints = (value: number) => value.toLocaleString('pt-BR', { maximumFractionDigits: 2 });
+/** Base usada na época da rodada (regras antigas tinham base 1), derivada do retrato salvo. */
+const baseOf = (game: ReportGame) => game.finalScore - game.accessibilityScore - game.voteScore - game.effectScore;
 const names = (list: { name: string }[]) => list.map(item => item.name).join(', ') || '—';
 
 /** Rótulos das opções de acessibilidade marcadas no jogo. */
@@ -37,7 +38,7 @@ function GameReportCard({ game, rank, winner, delay }: { game: ReportGame; rank:
         : <em>Nenhum voto</em>}
     </div>
     <div className="score-detail report-score">
-      <span>Base {BASE_SCORE}</span>
+      <span>Base {formatPoints(baseOf(game))}</span>
       <span>Acesso {formatPoints(game.accessibilityScore)}</span>
       <span>Votos {formatPoints(game.voteScore)}</span>
       {game.effectScore !== 0 && <span>Habilidade {game.effectScore > 0 ? '+' : ''}{formatPoints(game.effectScore)}</span>}

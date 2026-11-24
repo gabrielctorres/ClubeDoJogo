@@ -4,6 +4,7 @@ import { useClubStore } from '../store/clubStore';
 import { useAdvanceStage } from '../hooks/useAdvanceStage';
 import { Button, Confetti, StageEyebrow } from '../components/UI';
 import { sfx } from '../feel/sound';
+import { CHOSEN_VOTE_POINTS } from '../services/scoring';
 
 /** Intervalos do caça-níquel: começa rápido e vai freando (~2,1 s no total). */
 const SLOT_STEPS = Array.from({ length: 16 }, (_, i) => Math.round(50 * 1.12 ** i));
@@ -46,7 +47,7 @@ export default function Chosen() {
         : <motion.span key={rolling} className="slot-name rolling" initial={{ y: -18, opacity: 0 }} animate={{ y: 0, opacity: 1 }} transition={{ duration: 0.06 }}>{rolling}</motion.span>}
     </h1>
     {show && <motion.div initial={{ opacity: 0, y: 14 }} animate={{ opacity: 1, y: 0 }} transition={{ delay: 0.35 }}>
-      <div className="chosen-badge">{cards ? 'Seu poder será a carta escolhida' : 'Seu voto vale 2 pontos nesta rodada'}</div>
+      <div className="chosen-badge">{cards ? 'Seu poder será a carta escolhida' : `Seu voto vale ${CHOSEN_VOTE_POINTS} pontos nesta rodada`}</div>
       <Button onClick={advance}>Continuar <span>→</span></Button>
     </motion.div>}
   </div>;

@@ -13,14 +13,14 @@ const round = (enabled: boolean, selected: AbilityId | null = null) => ({
 
 describe('voto do Escolhido', () => {
   it('mantém o bônus padrão sem cartas', () => {
-    expect(calculatePlayerVotePoints(round(false), 'chosen')).toBe(2);
-    expect(calculatePlayerVotePoints(round(false), 'other')).toBe(1);
+    expect(calculatePlayerVotePoints(round(false), 'chosen')).toBe(4);
+    expect(calculatePlayerVotePoints(round(false), 'other')).toBe(2);
   });
   it.each([null, ...abilities.map(ability => ability.id)])('usa somente a carta ativa: %s', selected => {
-    expect(calculatePlayerVotePoints(round(true, selected), 'chosen')).toBe(selected === 'democracy' ? 2 : 1);
-    expect(calculatePlayerVotePoints(round(true, selected), 'other')).toBe(1);
+    expect(calculatePlayerVotePoints(round(true, selected), 'chosen')).toBe(selected === 'democracy' ? 4 : 2);
+    expect(calculatePlayerVotePoints(round(true, selected), 'other')).toBe(2);
   });
   it('ignora uma carta antiga quando a regra está desativada', () => {
-    expect(calculatePlayerVotePoints(round(false, 'humility'), 'chosen')).toBe(2);
+    expect(calculatePlayerVotePoints(round(false, 'humility'), 'chosen')).toBe(4);
   });
 });

@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Crown } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useClubStore } from '../store/clubStore';
-import { calculatePlayerVotePoints } from '../services/scoring';
+import { CHOSEN_VOTE_POINTS, VOTE_POINTS, calculatePlayerVotePoints } from '../services/scoring';
 import { Button, Card, StageEyebrow } from '../components/UI';
 import { useAdvanceStage } from '../hooks/useAdvanceStage';
 import { sfx } from '../feel/sound';
@@ -33,7 +33,7 @@ export default function Voting() {
   const pick = (gameId: string) => {
     if (picked) return;
     setPicked(gameId);
-    if (points > 1) sfx.reveal(); else sfx.plus();
+    if (points > VOTE_POINTS) sfx.reveal(); else sfx.plus();
     timer.current = setTimeout(() => {
       setPicked(null);
       vote({ playerId: player.id, gameId, points });
@@ -47,7 +47,7 @@ export default function Voting() {
       {player.name}, escolha seu favorito
     </motion.h2>
     {chosen && <motion.div className="chosen-badge" initial={{ scale: 0.5 }} animate={{ scale: 1 }} transition={{ type: 'spring', stiffness: 400, damping: 12 }}>
-      <Crown size={20}/> Você é o Escolhido {humility ? '· vote no seu próprio jogo' : points === 2 ? '· seu voto vale 2 pontos' : '· poder especial: apenas a carta escolhida'}
+      <Crown size={20}/> Você é o Escolhido {humility ? '· vote no seu próprio jogo' : points === CHOSEN_VOTE_POINTS ? `· seu voto vale ${CHOSEN_VOTE_POINTS} pontos` : '· poder especial: apenas a carta escolhida'}
     </motion.div>}
     {alreadyVoted ? <Card><p>Este participante já registrou seu voto nesta rodada.</p><Button onClick={advance}>{last ? 'Ver pontuação' : 'Próximo participante'} <span>→</span></Button></Card> : <>
       {/* A grade é recriada a cada participante, para as cartas entrarem de novo. */}

@@ -1,6 +1,6 @@
 # Balanceamento dos bônus de acessibilidade
 
-> **Atualização:** o grupo decidiu **remover o teto de 2,0**. Os valores de cada opção da tabela de consenso continuam valendo, mas os bônus agora se somam sem limite. As simulações abaixo consideram o teto e não refletem mais a regra atual.
+> **Atualização:** o grupo decidiu **remover o teto de 2,0**. Os valores de cada opção da tabela de consenso continuam valendo, mas os bônus agora se somam sem limite. As simulações abaixo consideram o teto e não refletem mais a regra atual. A simulação de 67 meses com a regra atual, e o debate sobre a força dos votos, estão em [balanceamento-votos.md](balanceamento-votos.md).
 
 Debate entre dois agentes (A, Designer de Regras, e B, Crítico) feito em outubro de 2026 para decidir se os bônus de acessibilidade estavam equilibrados e quanto vale a nova opção **Jogo de Emulador**. Todos os números já consideram o **ponto base** de 1 por jogo e o **peso mínimo 1** na roleta.
 

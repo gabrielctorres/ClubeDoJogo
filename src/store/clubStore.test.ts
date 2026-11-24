@@ -70,13 +70,13 @@ describe('indicações e votos', () => {
     expect(round().games[0].nominatedBy).toEqual([playerId('Ana'), playerId('Bia')]);
   });
 
-  it('aplica peso 2 ao Escolhido e rejeita um segundo voto', () => {
+  it('aplica peso dobrado ao Escolhido e rejeita um segundo voto', () => {
     store().addNomination('Valheim', playerId('Ana'));
     store().addNomination('Hades', playerId('Bia'));
     store().vote({ playerId: playerId('Ana'), gameId: gameId('Valheim'), points: 99 });
     store().vote({ playerId: playerId('Ana'), gameId: gameId('Hades'), points: 1 });
     store().vote({ playerId: playerId('Bia'), gameId: gameId('Valheim'), points: 1 });
-    expect(round().games.find(g => g.name === 'Valheim')!.voteScore).toBe(3);
+    expect(round().games.find(g => g.name === 'Valheim')!.voteScore).toBe(6); // Escolhido 4 + voto comum 2
     expect(round().games.find(g => g.name === 'Hades')!.voteScore).toBe(0);
   });
 
@@ -90,8 +90,8 @@ describe('indicações e votos', () => {
     store().updateGame(gameId('Valheim'), { steamGreen: true });
     const valheim = round().games.find(g => g.name === 'Valheim')!;
     expect(valheim.effectScore).toBe(-2);
-    expect(valheim.finalScore).toBe(1 + 2 + 1 - 2); // base + F2P + Steam Verde + efeitos
-    expect(round().games.find(g => g.name === 'Hades')!.finalScore).toBe(1 - 1);
+    expect(valheim.finalScore).toBe(2 + 2 + 1 - 2); // base + F2P + Steam Verde + efeitos
+    expect(round().games.find(g => g.name === 'Hades')!.finalScore).toBe(2 - 1);
   });
 
   it('renomeia um jogo, mas recusa nome vazio ou repetido', () => {
@@ -131,10 +131,11 @@ describe('quem venceu no mês anterior só vota', () => {
 describe('roleta e fim da rodada', () => {
   it('não gira de novo e grava probabilidade, IDs e relatório no histórico', () => {
     startWith('Ana', 'Bia');
-    store().choosePlayer();
+    useClubStore.setState({ chosenHistory: [playerId('Bia')] });
+    store().choosePlayer(); // Ana é a única elegível, então o voto de Bia é comum
     store().addNomination('Valheim', playerId('Ana'));
     store().addNomination('Hades', playerId('Bia'));
-    store().updateGame(gameId('Valheim'), { ownedBy: [playerId('Bia')], steamGreen: true }); // 1 + 0,5 + 1
+    store().updateGame(gameId('Valheim'), { ownedBy: [playerId('Bia')], steamGreen: true }); // 2 + 0,5 + 1
     store().adjustGameScore(gameId('Hades'), -2, 'coin-flip'); // negativo vale peso 1 na roleta
     store().vote({ playerId: playerId('Bia'), gameId: gameId('Valheim'), points: 1 });
     store().spinWinner();
@@ -147,7 +148,7 @@ describe('roleta e fim da rodada', () => {
     const [result] = store().history;
     expect(store().round).toBeUndefined();
     expect(result.winnerGameName).toBe('Hades');
-    expect(result.probability).toBe(1 / 4.5); // pesos 3,5 (2,5 + 1 voto) e 1
+    expect(result.probability).toBe(1 / 6.5); // pesos 5,5 (3,5 + voto de 2) e 1
     expect(result.nominatedByIds).toEqual([playerId('Bia')]);
 
     const report = result.report!;
@@ -155,8 +156,8 @@ describe('roleta e fim da rodada', () => {
     const valheim = report.games.find(g => g.name === 'Valheim')!;
     expect(valheim.nominatedBy).toEqual([{ id: playerId('Ana'), name: 'Ana' }]);
     expect(valheim.ownedBy.map(p => p.name)).toEqual(['Bia']);
-    expect(valheim.votes).toEqual([{ player: { id: playerId('Bia'), name: 'Bia' }, points: 1 }]);
-    expect(valheim.probability).toBe(3.5 / 4.5);
+    expect(valheim.votes).toEqual([{ player: { id: playerId('Bia'), name: 'Bia' }, points: 2 }]);
+    expect(valheim.probability).toBe(5.5 / 6.5);
   });
 });
 
@@ -184,11 +185,26 @@ describe('migração de rodadas salvas', () => {
     const normalized = normalizeRound(old)!;
     expect(normalized.games[0].effectScore).toBe(-3);
     expect(normalized.games[0].emulator).toBe(false);
-    expect(normalized.games[0].finalScore).toBe(1 + 2 - 3); // agora com o ponto base
+    expect(normalized.games[0].finalScore).toBe(2 + 2 - 3); // agora com a base atual
     expect(normalized.blockedNominatorIds).toEqual([]);
     expect(normalized.usedEffects).toEqual(['fun-inspector']);
     expect(normalized.optionalRules.randomCategory).toMatchObject({ rerollsUsed: 1, drawnCategories: ['RPG'] });
     expect(normalized.optionalRules.cards.replacement).toBeNull();
     expect(normalized.extraGameUsed).toBe(false);
+  });
+
+  it('converte votos salvos na escala antiga e aplica o teto de donos', () => {
+    const old = {
+      id: 'r', participantIds: ['a', 'b'], chosenPlayerId: 'a', chosenPlayerName: 'A', stage: 'voting', currentIndex: 2,
+      usedEffects: [], blockedNominatorIds: [], extraGameUsed: false,
+      optionalRules: { randomCategory: { enabled: false, category: null, rerollsUsed: 0 }, cards: { enabled: false, options: [], selected: null } },
+      games: [{ id: 'g', name: 'Zelda', nominatedBy: ['c'], freeToPlay: false, steamGreen: false, emulator: true, ownedBy: ['a', 'b', 'c'],
+        votes: [{ playerId: 'a', gameId: 'g', points: 2 }, { playerId: 'b', gameId: 'g', points: 1 }],
+        accessibilityScore: 2.5, voteScore: 3, effectScore: 0, finalScore: 6.5 }],
+    } as unknown as Round;
+    const [game] = normalizeRound(old)!.games;
+    expect(game.votes.map(v => v.points)).toEqual([4, 2]);
+    expect(game.accessibilityScore).toBe(2); // emulador 1 + donos no máximo 1
+    expect(game.finalScore).toBe(2 + 2 + 6);
   });
 });

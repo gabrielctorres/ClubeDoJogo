@@ -11,8 +11,8 @@ As regras oficiais estão em [CLUBE-DO-JOGO.md](CLUBE-DO-JOGO.md).
 3. **Escolhido**: sorteio com cooldown. Quem já foi Escolhido no ciclo fica de fora, e quem foi no mês anterior não repete nem na virada do ciclo.
 4. **Habilidades** e **Tema**: só aparecem se a regra opcional estiver ligada.
 5. **Indicações**: cada participante indica 1 jogo. Indicações repetidas viram uma opção só.
-6. **Acessibilidade**: Free-to-Play +2, Steam Verde +1,5, +0,5 por membro que já tem o jogo.
-7. **Votação**: voto comum vale 1 ponto e o voto do Escolhido vale 2.
+6. **Acessibilidade**: todo jogo começa com 2 pontos. Free-to-Play +2, Steam Verde +1, Emulador +1, +0,5 por membro que já tem o jogo (no máximo +1).
+7. **Votação**: voto comum vale 2 pontos e o voto do Escolhido vale 4.
 8. **Placar** e **Roleta**: a pontuação vira o peso de cada jogo na roleta.
 
 ## Rodando localmente

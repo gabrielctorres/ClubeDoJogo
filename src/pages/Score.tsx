@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { motion } from 'framer-motion';
 import { Button, Card, StageEyebrow } from '../components/UI';
 import { CountUp, ScoreDelta } from '../components/Feel';
-import { getAbility } from '../services/abilities';
+import { EFFECT_POINTS, getAbility } from '../services/abilities';
 import { BASE_SCORE } from '../services/scoring';
 import { secureRandomInt } from '../services/weightedRandom';
 import { useClubStore } from '../store/clubStore';
@@ -35,7 +35,7 @@ export default function Score() {
     setCoin({ name, heads, done: false });
     sfx.whoosh();
     coinTimer.current = setTimeout(() => {
-      adjustGameScore(gameId, heads ? 3 : -2, 'coin-flip');
+      adjustGameScore(gameId, heads ? EFFECT_POINTS.coinHeads : EFFECT_POINTS.coinTails, 'coin-flip');
       if (heads) sfx.win(); else sfx.minus();
       setCoin({ name, heads, done: true });
     }, COIN_FLIP_MS);
@@ -48,11 +48,11 @@ export default function Score() {
     {ability && <Card className="effect-panel">
       <strong>Habilidade: {ability.name}</strong>
       {chosen === 'fun-inspector' && <div className="effect-actions">
-        <span>Escolha um jogo para aplicar -3 pontos.</span>
-        {sorted.map(g => <Button key={g.id} variant="secondary" sound="minus" disabled={used('fun-inspector')} onClick={() => adjustGameScore(g.id, -3, 'fun-inspector')}>-3 em {g.name}</Button>)}
+        <span>Escolha um jogo para aplicar {EFFECT_POINTS.funInspector} pontos.</span>
+        {sorted.map(g => <Button key={g.id} variant="secondary" sound="minus" disabled={used('fun-inspector')} onClick={() => adjustGameScore(g.id, EFFECT_POINTS.funInspector, 'fun-inspector')}>{EFFECT_POINTS.funInspector} em {g.name}</Button>)}
       </div>}
       {chosen === 'point-pix' && <div className="effect-actions">
-        <span>Transfira 1 ponto entre dois jogos.</span>
+        <span>Transfira {EFFECT_POINTS.pointPix} ponto entre dois jogos.</span>
         <select value={from} onChange={e => setFrom(e.target.value)}>
           <option value="">Tirar de...</option>
           {round.games.map(g => <option key={g.id} value={g.id}>{g.name}</option>)}
@@ -72,7 +72,7 @@ export default function Score() {
             {coin.done ? (coin.heads ? '😀' : '💀') : '?'}
           </motion.div>
           {coin.done && <motion.span className="coin-result" initial={{ opacity: 0, y: 6 }} animate={{ opacity: 1, y: 0 }}>
-            {coin.heads ? 'Cara: +3' : 'Coroa: -2'} pontos em {coin.name}
+            {coin.heads ? `Cara: +${EFFECT_POINTS.coinHeads}` : `Coroa: ${EFFECT_POINTS.coinTails}`} pontos em {coin.name}
           </motion.span>}
         </div>}
         {sorted.map(g => <Button key={g.id} variant="secondary" sound={null} disabled={Boolean(coin) || used('coin-flip')} onClick={() => flipCoin(g.id, g.name)}>{g.name} · jogar moeda</Button>)}
